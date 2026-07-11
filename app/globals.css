@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --color-paper: #eff1ec;
+  --color-paper-raised: #f8f9f6;
+  --color-ink: #101a16;
+  --color-ink-muted: #57615a;
+  --color-pitch: #1f4534;
+  --color-pitch-dark: #142e23;
+  --color-gold: #c89b3c;
+  --color-gold-soft: #e7d29c;
+  --color-line: #c9cfc5;
+  --color-ok: #2f6b4f;
+  --color-ok-soft: #e1ece5;
+  --color-flag: #a6551c;
+  --color-flag-soft: #f2e3d5;
+  --color-danger: #9c3b2e;
+  --color-danger-soft: #f3e0dc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #0e1512;
+    --color-paper-raised: #141d19;
+    --color-ink: #eef0ea;
+    --color-ink-muted: #a2ab9f;
+    --color-pitch: #2a5940;
+    --color-pitch-dark: #1c3e2c;
+    --color-gold: #d8ae55;
+    --color-gold-soft: #4a3e22;
+    --color-line: #2a332c;
+    --color-ok: #6ea587;
+    --color-ok-soft: #1c2f24;
+    --color-flag: #c47b45;
+    --color-flag-soft: #3a2a1a;
+    --color-danger: #d17362;
+    --color-danger-soft: #3a2320;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-pitch: var(--color-pitch);
+  --color-pitch-dark: var(--color-pitch-dark);
+  --color-gold: var(--color-gold);
+  --color-gold-soft: var(--color-gold-soft);
+  --color-line: var(--color-line);
+  --color-ok: var(--color-ok);
+  --color-ok-soft: var(--color-ok-soft);
+  --color-flag: var(--color-flag);
+  --color-flag-soft: var(--color-flag-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-public-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background: var(--color-gold-soft);
+  color: var(--color-ink);
+}
