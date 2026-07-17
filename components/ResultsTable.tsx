@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
+import { formatCurrency, formatDateRange } from "@/lib/format";
 import type { TeamDuesReport } from "@/lib/dues/types";
 import { StatusBadge } from "./StatusBadge";
 
@@ -34,7 +34,7 @@ export function ResultsTable({ report }: { report: TeamDuesReport }) {
         </thead>
         <tbody>
           {report.players.map((player) => {
-            const rowKey = player.playerId + (player.matchedContractId ?? "");
+            const rowKey = player.playerId;
             const isExpanded = expandedId === rowKey;
             return (
               <Fragment key={rowKey}>
@@ -52,7 +52,7 @@ export function ResultsTable({ report }: { report: TeamDuesReport }) {
                   </td>
                   <td className="py-3 pr-3 text-(--color-ink)">{player.playerName}</td>
                   <td className="py-3 pr-3">
-                    <StatusBadge status={player.status} noMatchReason={player.noMatchReason} />
+                    <StatusBadge status={player.status} />
                   </td>
                   <td className="py-3 pr-4 text-right font-(family-name:--font-mono) tabular-nums text-(--color-ink)">
                     {formatCurrency(player.duesPaid)}
@@ -61,7 +61,7 @@ export function ResultsTable({ report }: { report: TeamDuesReport }) {
                 {isExpanded ? (
                   <tr className="border-b border-(--color-line) bg-(--color-paper-raised) last:border-b-0">
                     <td colSpan={4} className="px-4 py-4">
-                      <DuesBreakdown result={player} />
+                      <PeriodBreakdown result={player} />
                     </td>
                   </tr>
                 ) : null}
@@ -84,34 +84,102 @@ export function ResultsTable({ report }: { report: TeamDuesReport }) {
   );
 }
 
-function DuesBreakdown({ result }: { result: TeamDuesReport["players"][number] }) {
-  if (!result.breakdown) {
+function PeriodBreakdown({ result }: { result: TeamDuesReport["players"][number] }) {
+  const hasPeriods = Boolean(result.periods && result.periods.length > 0);
+
+  if (!hasPeriods) {
+    if (result.status === "NOT_AUTHORIZED") {
+      return <p className="text-sm text-(--color-ink-muted)">None of this player&rsquo;s contracts have Dues Authorization checked.</p>;
+    }
+
+    if (result.status === "DATA_ERROR") {
+      return (
+        <p className="text-sm text-(--color-danger)">
+          Missing or unrecognized payroll data on this team (Pay Periods per Year or Payroll Cycle) — dues could not be calculated.
+        </p>
+      );
+    }
+
     return (
       <p className="text-sm text-(--color-ink-muted)">
-        No calculation breakdown available for this status.
+        This player&rsquo;s contract(s) are authorized, but no pay period had covered days within the selected range and
+        the dues season.{" "}
+        {typeof result.periodsConsidered === "number"
+          ? `0 of ${result.periodsConsidered} generated pay periods overlapped.`
+          : null}
       </p>
     );
   }
 
-  const b = result.breakdown;
-  const rows: [string, string][] = [
-    ["Base compensation", formatCurrency(b.baseCompensation)],
-    ["Annual compensation", formatCurrency(b.annualCompensation)],
-    ["Compensation / paycheck", formatCurrency(b.compensationPerPaycheck)],
-    ["Pay periods / year", String(b.payPeriodsPerYear)],
-    ["Payments / month", b.cycleNumber.toFixed(3)],
-    ["Months in period", formatMonths(b.monthsInPeriod)],
-    ["Dues %", formatPercent(b.duesPercent)],
-  ];
+  const sorted = [...result.periods!].sort((a, b) => a.periodStart.localeCompare(b.periodStart));
+  const multipleContracts = result.matchedContractIds.length > 1;
 
   return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 font-(family-name:--font-mono) text-xs sm:grid-cols-4">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex flex-col gap-0.5">
-          <dt className="text-(--color-ink-muted)">{label}</dt>
-          <dd className="tabular-nums text-(--color-ink)">{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="overflow-x-auto">
+      {result.status === "DATA_ERROR" ? (
+        <p className="mb-2 text-xs text-(--color-danger)">
+          One of this player&rsquo;s other contracts has missing/unrecognized payroll data and may be excluded from this total.
+        </p>
+      ) : null}
+      {multipleContracts ? (
+        <p className="mb-2 text-xs text-(--color-ink-muted)">
+          {result.matchedContractIds.length} contracts contribute to this total, shown together below in date order.
+        </p>
+      ) : null}
+      <table className="w-full min-w-[520px] border-collapse font-(family-name:--font-mono) text-xs">
+        <thead>
+          <tr className="text-left text-(--color-ink-muted)">
+            <th className="py-1.5 pr-4 font-medium">Period</th>
+            <th className="py-1.5 pr-4 font-medium">Covered days</th>
+            <th className="py-1.5 pr-4 font-medium">Base comp</th>
+            <th className="py-1.5 pr-0 text-right font-medium">Contribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((p, i) => {
+            const sharesPeriodWithPrev =
+              i > 0 && sorted[i - 1].periodStart === p.periodStart && sorted[i - 1].periodEnd === p.periodEnd;
+            return (
+              <tr
+                key={`${p.periodStart}-${p.contractId}-${p.contractYearTermId}`}
+                className={sharesPeriodWithPrev ? "" : "border-t border-(--color-line)"}
+              >
+                <td className="py-1.5 pr-4 text-(--color-ink)">
+                  {formatDateRange(p.periodStart, p.periodEnd)}
+                  {sharesPeriodWithPrev ? <span className="ml-1.5 text-(--color-ink-muted)">(split)</span> : null}
+                  {p.isSeasonOpeningBlackout ? (
+                    <span
+                      className="ml-1.5 text-(--color-flag)"
+                      title="First pay period of the season — no dues owed by policy, regardless of coverage."
+                    >
+                      (season opening — no dues)
+                    </span>
+                  ) : null}
+                </td>
+                <td className="py-1.5 pr-4 tabular-nums text-(--color-ink)">
+                  {p.coveredDays} / {p.periodTotalDays}
+                </td>
+                <td className="py-1.5 pr-4 tabular-nums text-(--color-ink-muted)">
+                  {formatCurrency(p.baseCompensation)}
+                </td>
+                <td className="py-1.5 pr-0 text-right tabular-nums text-(--color-ink)">
+                  {formatCurrency(p.contribution)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-(--color-line)">
+            <td colSpan={3} className="py-1.5 pr-4 text-right text-(--color-ink-muted)">
+              Subtotal
+            </td>
+            <td className="py-1.5 pr-0 text-right font-semibold tabular-nums text-(--color-ink)">
+              {formatCurrency(sorted.reduce((sum, p) => sum + p.contribution, 0))}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 }

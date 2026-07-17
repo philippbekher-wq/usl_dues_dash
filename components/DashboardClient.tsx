@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { TeamDuesReport } from "@/lib/dues/types";
+import { DEFAULT_SEASON_END, DEFAULT_SEASON_START, monthDayToIsoForYear } from "@/lib/dues/season";
 import { DateRangePicker } from "./DateRangePicker";
 import { ResultsTable } from "./ResultsTable";
+import { SeasonRangePicker } from "./SeasonRangePicker";
 import { TeamSelector, type TeamOption } from "./TeamSelector";
 
 type RequestState =
@@ -12,13 +14,20 @@ type RequestState =
   | { status: "error"; message: string }
   | { status: "success"; report: TeamDuesReport };
 
+const currentYear = new Date().getFullYear();
+const DEFAULT_SEASON_START_DATE = monthDayToIsoForYear(currentYear, DEFAULT_SEASON_START);
+const DEFAULT_SEASON_END_DATE = monthDayToIsoForYear(currentYear, DEFAULT_SEASON_END);
+
 export function DashboardClient({ teams }: { teams: TeamOption[] }) {
   const [teamId, setTeamId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [seasonStartDate, setSeasonStartDate] = useState(DEFAULT_SEASON_START_DATE);
+  const [seasonEndDate, setSeasonEndDate] = useState(DEFAULT_SEASON_END_DATE);
   const [state, setState] = useState<RequestState>({ status: "idle" });
 
-  const canSubmit = Boolean(teamId && startDate && endDate) && startDate <= endDate;
+  const seasonInvalid = seasonStartDate.slice(5, 10) > seasonEndDate.slice(5, 10);
+  const canSubmit = Boolean(teamId && startDate && endDate) && startDate <= endDate && !seasonInvalid;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +38,7 @@ export function DashboardClient({ teams }: { teams: TeamOption[] }) {
       const res = await fetch("/api/dues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId, startDate, endDate }),
+        body: JSON.stringify({ teamId, startDate, endDate, seasonStartDate, seasonEndDate }),
       });
       const body = await res.json();
 
@@ -48,24 +57,38 @@ export function DashboardClient({ teams }: { teams: TeamOption[] }) {
     <div className="flex flex-1 flex-col gap-6">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg border border-(--color-line) bg-(--color-paper-raised) p-5 sm:flex-row sm:items-end sm:justify-between"
+        className="rounded-lg border border-(--color-line) bg-(--color-paper-raised) p-5"
       >
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <TeamSelector teams={teams} value={teamId} onChange={setTeamId} />
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <TeamSelector teams={teams} value={teamId} onChange={setTeamId} />
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!canSubmit || state.status === "loading"}
+            className="h-11 shrink-0 rounded-md bg-(--color-pitch) px-6 text-sm font-medium text-(--color-paper) transition-colors hover:bg-(--color-pitch-dark) disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-gold)"
+          >
+            {state.status === "loading" ? "Calculating…" : "Calculate"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={!canSubmit || state.status === "loading"}
-          className="h-11 shrink-0 rounded-md bg-(--color-pitch) px-6 text-sm font-medium text-(--color-paper) transition-colors hover:bg-(--color-pitch-dark) disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-gold)"
-        >
-          {state.status === "loading" ? "Calculating…" : "Calculate"}
-        </button>
+
+        <SeasonRangePicker
+          seasonStartDate={seasonStartDate}
+          seasonEndDate={seasonEndDate}
+          onSeasonStartDateChange={setSeasonStartDate}
+          onSeasonEndDateChange={setSeasonEndDate}
+          error={
+            seasonInvalid
+              ? "Season start must be on or before season end (a wrapping season isn't supported)."
+              : undefined
+          }
+        />
       </form>
 
       {startDate && endDate && startDate > endDate ? (

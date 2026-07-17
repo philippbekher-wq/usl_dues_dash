@@ -1,4 +1,4 @@
-import type { DuesStatus, NoMatchReason } from "@/lib/dues/types";
+import type { DuesStatus } from "@/lib/dues/types";
 
 const STATUS_COPY: Record<DuesStatus, { label: string; dot: string; text: string; bg: string }> = {
   CALCULATED: {
@@ -13,8 +13,8 @@ const STATUS_COPY: Record<DuesStatus, { label: string; dot: string; text: string
     text: "text-(--color-ink-muted)",
     bg: "bg-(--color-paper-raised)",
   },
-  NO_MATCH: {
-    label: "No match",
+  NO_COVERAGE: {
+    label: "No coverage",
     dot: "bg-(--color-flag)",
     text: "text-(--color-flag)",
     bg: "bg-(--color-flag-soft)",
@@ -27,29 +27,17 @@ const STATUS_COPY: Record<DuesStatus, { label: string; dot: string; text: string
   },
 };
 
-const REASON_COPY: Record<NoMatchReason, string> = {
-  NO_CONTRACT_TERM_MATCH: "No contract term on file covers the full date range.",
-  NO_CONTRACT_YEAR_TERM_MATCH: "No contract year term on file covers the full date range.",
-};
-
-export function StatusBadge({
-  status,
-  noMatchReason,
-}: {
-  status: DuesStatus;
-  noMatchReason?: NoMatchReason;
-}) {
+export function StatusBadge({ status, detail }: { status: DuesStatus; detail?: string }) {
   const copy = STATUS_COPY[status];
-  const title = noMatchReason ? REASON_COPY[noMatchReason] : undefined;
 
   return (
     <span
-      title={title}
+      title={detail}
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${copy.bg} ${copy.text}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${copy.dot}`} aria-hidden />
       {copy.label}
-      {noMatchReason ? <span className="sr-only">: {REASON_COPY[noMatchReason]}</span> : null}
+      {detail ? <span className="sr-only">: {detail}</span> : null}
     </span>
   );
 }

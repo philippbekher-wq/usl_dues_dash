@@ -30,23 +30,40 @@ export interface Contract {
   teamId: string;
   effectiveDate: string;
   contractEndDate: string;
+  /** Empty string if unset. When set, effectively replaces contractEndDate everywhere (see calculate.ts's effectiveContractEnd). */
+  terminationDate: string;
   duesAuthorization: boolean;
   duesPercent: number;
   terms: ContractTerm[];
 }
 
-export type DuesStatus = "CALCULATED" | "NOT_AUTHORIZED" | "NO_MATCH" | "DATA_ERROR";
+export type DuesStatus = "CALCULATED" | "NOT_AUTHORIZED" | "NO_COVERAGE" | "DATA_ERROR";
 
-export type NoMatchReason = "NO_CONTRACT_TERM_MATCH" | "NO_CONTRACT_YEAR_TERM_MATCH";
-
-export interface DuesBreakdown {
+export interface PeriodContribution {
+  periodStart: string;
+  periodEnd: string;
+  periodTotalDays: number;
+  coveredStart: string;
+  coveredEnd: string;
+  coveredDays: number;
+  contractId: string;
+  contractTermId: string;
+  contractYearTermId: string;
   baseCompensation: number;
-  annualCompensation: number;
   compensationPerPaycheck: number;
-  payPeriodsPerYear: number;
-  cycleNumber: number;
-  monthsInPeriod: number;
   duesPercent: number;
+  contribution: number;
+  /** True if this is the season-opening period for the cycle — contribution is forced to 0 by policy regardless of coveredDays. */
+  isSeasonOpeningBlackout?: boolean;
+}
+
+/** The result of calculating dues for a single contract — before merging across a player's other contracts, if any (see buildTeamDuesReport). */
+export interface ContractDuesResult {
+  duesPaid: number;
+  status: DuesStatus;
+  /** How many pay periods were generated for the query window before intersecting — lets NO_COVERAGE explain itself (e.g. "0 of 22 periods overlapped"). */
+  periodsConsidered?: number;
+  periods?: PeriodContribution[];
 }
 
 export interface DuesResult {
@@ -54,11 +71,10 @@ export interface DuesResult {
   playerName: string;
   duesPaid: number;
   status: DuesStatus;
-  noMatchReason?: NoMatchReason;
-  matchedContractId?: string;
-  matchedContractTermId?: string;
-  matchedContractYearTermId?: string;
-  breakdown?: DuesBreakdown;
+  /** A player can have more than one contract with the team overlapping the query window (e.g. a mid-season re-signing) — all of them are summed into this one row. */
+  matchedContractIds: string[];
+  periodsConsidered?: number;
+  periods?: PeriodContribution[];
 }
 
 export interface TeamDuesReport {

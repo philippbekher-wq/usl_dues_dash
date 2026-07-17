@@ -57,6 +57,7 @@ export async function fetchContractsWithTermsForTeam(teamId: string): Promise<Te
     teamId: c.teamId,
     effectiveDate: c.effectiveDate,
     contractEndDate: c.contractEndDate,
+    terminationDate: c.terminationDate,
     duesAuthorization: c.duesAuthorization,
     duesPercent: c.duesPercent,
     terms: c.termIds

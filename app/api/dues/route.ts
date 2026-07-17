@@ -3,6 +3,7 @@ import { AirtableFetchError } from "@/lib/airtable/errors";
 import { fetchContractsWithTermsForTeam } from "@/lib/airtable/contracts";
 import { fetchTeamById } from "@/lib/airtable/teams";
 import { buildTeamDuesReport } from "@/lib/dues/calculate";
+import { extractMonthDay } from "@/lib/dues/season";
 import { duesRequestSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -16,7 +17,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const { startDate, endDate, teamId } = parsed.data;
+  const { startDate, endDate, teamId, seasonStartDate, seasonEndDate } = parsed.data;
+  const seasonStart = extractMonthDay(seasonStartDate);
+  const seasonEnd = extractMonthDay(seasonEndDate);
 
   try {
     const team = await fetchTeamById(teamId);
@@ -25,7 +28,15 @@ export async function POST(request: Request) {
     }
 
     const { contracts, players } = await fetchContractsWithTermsForTeam(teamId);
-    const report = buildTeamDuesReport({ team, contracts, players, startDate, endDate });
+    const report = buildTeamDuesReport({
+      team,
+      contracts,
+      players,
+      startDate,
+      endDate,
+      seasonStart,
+      seasonEnd,
+    });
 
     return NextResponse.json(report);
   } catch (error) {

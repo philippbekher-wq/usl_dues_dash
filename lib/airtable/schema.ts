@@ -18,6 +18,7 @@ export const FIELDS = {
   contracts: {
     effectiveDate: "Effective Date",
     contractEndDate: "Contract End Date",
+    terminationDate: "Termination Date",
     contractTerms: "Contract Terms",
     duesAuthorization: "Dues Authorization",
     dues: "Dues",

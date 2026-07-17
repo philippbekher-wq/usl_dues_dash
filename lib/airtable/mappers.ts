@@ -64,6 +64,7 @@ export interface RawContract {
   teamId: string;
   effectiveDate: string;
   contractEndDate: string;
+  terminationDate: string;
   duesAuthorization: boolean;
   duesPercent: number;
   termIds: string[];
@@ -76,6 +77,7 @@ export function mapContractRaw(record: AirtableRecord): RawContract {
     teamId: firstLinkedId(record.get(FIELDS.contracts.team)),
     effectiveDate: toDateOnly(record.get(FIELDS.contracts.effectiveDate)),
     contractEndDate: toDateOnly(record.get(FIELDS.contracts.contractEndDate)),
+    terminationDate: toDateOnly(record.get(FIELDS.contracts.terminationDate)),
     duesAuthorization: Boolean(record.get(FIELDS.contracts.duesAuthorization)),
     duesPercent: Number(record.get(FIELDS.contracts.dues) ?? 0),
     termIds: toLinkedIds(record.get(FIELDS.contracts.contractTerms)),
