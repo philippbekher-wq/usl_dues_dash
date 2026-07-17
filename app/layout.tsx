@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="en-US"
       className={`${fraunces.variable} ${publicSans.variable} ${plexMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
