@@ -1,5 +1,6 @@
 import { fetchAllTeams } from "@/lib/airtable/teams";
 import { DashboardClient } from "@/components/DashboardClient";
+import { LogoutButton } from "@/components/LogoutButton";
 
 // Team list comes from Airtable and can change between deploys; never
 // bake it into a static build output.
@@ -18,13 +19,16 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="bg-(--color-pitch) px-6 py-5 sm:px-10">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-(--color-gold)">
-          USL Front Office
-        </p>
-        <h1 className="font-(family-name:--font-display) text-2xl text-(--color-paper) sm:text-3xl">
-          Dues Dashboard
-        </h1>
+      <header className="flex items-start justify-between bg-(--color-pitch) px-6 py-5 sm:px-10">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-(--color-gold)">
+            USL Front Office
+          </p>
+          <h1 className="font-(family-name:--font-display) text-2xl text-(--color-paper) sm:text-3xl">
+            Dues Dashboard
+          </h1>
+        </div>
+        <LogoutButton />
       </header>
 
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8 sm:px-10">
