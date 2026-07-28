@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AirtableFetchError } from "@/lib/airtable/errors";
 import { fetchContractsWithTermsForTeam } from "@/lib/airtable/contracts";
+import { fetchActualDuesForPlayers } from "@/lib/airtable/duesAccounting";
 import { fetchTeamById } from "@/lib/airtable/teams";
 import { buildTeamDuesReport } from "@/lib/dues/calculate";
 import { extractMonthDay } from "@/lib/dues/season";
@@ -38,7 +39,15 @@ export async function POST(request: Request) {
       seasonEnd,
     });
 
-    return NextResponse.json(report);
+    const actualDues = await fetchActualDuesForPlayers(
+      report.players.map((p) => ({ id: p.playerId, name: p.playerName })),
+      team.name,
+      startDate,
+      endDate,
+    );
+    const teamTotalActualPaid = actualDues.reduce((sum, r) => sum + r.totalPaid, 0);
+
+    return NextResponse.json({ ...report, actualDues, teamTotalActualPaid });
   } catch (error) {
     if (error instanceof AirtableFetchError) {
       console.error(error.message, error.cause);

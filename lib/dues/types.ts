@@ -77,6 +77,19 @@ export interface DuesResult {
   periods?: PeriodContribution[];
 }
 
+export interface ActualDuesPayment {
+  payrollDate: string;
+  amount: number;
+}
+
+/** A player's real-world dues payments (Dues Accounting table) within the query range — independent of the calculated/owed figures above. */
+export interface ActualDuesResult {
+  playerId: string;
+  playerName: string;
+  totalPaid: number;
+  payments: ActualDuesPayment[];
+}
+
 export interface TeamDuesReport {
   teamId: string;
   teamName: string;
@@ -84,4 +97,10 @@ export interface TeamDuesReport {
   endDate: string;
   players: DuesResult[];
   teamTotalDues: number;
+}
+
+/** The full API response shape: the pure calculated report plus real-world payment data merged in by the route handler (see app/api/dues/route.ts). */
+export interface TeamDuesReportWithActuals extends TeamDuesReport {
+  actualDues: ActualDuesResult[];
+  teamTotalActualPaid: number;
 }

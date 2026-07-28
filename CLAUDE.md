@@ -38,11 +38,12 @@ npx eslint .           # lint
 
 - `schema.ts` — single source of truth for every literal Airtable table/field name. If a field gets renamed in Airtable, this is the one place to edit.
 - `contracts.ts` — `fetchContractsWithTermsForTeam`: fetches the full `Contracts` table, filters client-side by linked Team **record ID** (not `filterByFormula`, since a formula on a linked field resolves to display-name text via `ARRAYJOIN`, not the ID), then batch-fetches only the referenced Contract Terms / Contract Year Terms / Players by ID.
+- `duesAccounting.ts` — `fetchActualDuesForPlayers`: fetches **real** payroll dues payments from the `Dues Accounting` table (separate from the calculated/owed figures above) for a given player list, team name, and date range. Uses `filterByFormula` on `Payroll Date` (a plain date field, so unlike `Contracts` this is safe to filter server-side — no linked-field ARRAYJOIN issue). Matches each record to a player via its linked `Player` record ID, falling back to an exact `Full Name` text match only for the records that have no linked Player (a real, if uncommon, gap in the source data). Also cross-checks the record's `Team Name` (trimmed/case-insensitive, since it's free text) against the selected team — confirmed necessary via real data: a player can have payroll dues records from a *previous* team within the same query window (e.g. traded mid-season), and matching by player alone would incorrectly attribute those payments to the currently-viewed team.
 - `client.ts` — lazy singleton Airtable connection (throws a clear error if env vars are missing, doesn't crash at import time).
 
-**`app/api/{teams,dues}/route.ts`** — thin HTTP layer: zod-validate the request (`lib/validation.ts`), call the Airtable layer, call `buildTeamDuesReport`, return JSON. `app/page.tsx` is `force-dynamic` (never statically prerendered — the team list is live Airtable data, must not get baked into the build).
+**`app/api/{teams,dues}/route.ts`** — thin HTTP layer: zod-validate the request (`lib/validation.ts`), call the Airtable layer, call `buildTeamDuesReport`, merge in `fetchActualDuesForPlayers` results, return JSON (`TeamDuesReportWithActuals`). `app/page.tsx` is `force-dynamic` (never statically prerendered — the team list is live Airtable data, must not get baked into the build).
 
-**`components/`** — `DashboardClient.tsx` owns form state and the fetch lifecycle; `ResultsTable.tsx` renders one row per player (contracts are merged, not shown separately — see Business rules) with an expandable per-period breakdown; `DateField.tsx` is a custom MM/DD/YYYY text input (native `<input type="date">` renders in the browser/OS locale regardless of the page's `lang`, so a custom field was needed for a fixed US date format).
+**`components/`** — `DashboardClient.tsx` owns form state and the fetch lifecycle; `ResultsTable.tsx` renders one row per player (contracts are merged, not shown separately — see Business rules) with an expandable per-period breakdown of **calculated/owed** dues; `ActualPaidTable.tsx` is a separate section below it showing **real** dues payments per player (same expand-for-breakdown pattern, one row per Dues Accounting payment) — the two tables are intentionally not merged into one, so staff can compare owed vs. actually paid side by side without either figure being obscured; `DateField.tsx` is a custom MM/DD/YYYY text input (native `<input type="date">` renders in the browser/OS locale regardless of the page's `lang`, so a custom field was needed for a fixed US date format).
 
 ## Authentication
 
@@ -61,6 +62,7 @@ Staff login is gated by **Supabase Auth** (email/password, no self-signup — ac
 `Contracts` → `Effective Date`, `Contract End Date`, `Termination Date`, `Contract Terms` (link), `Dues Authorization`, `Dues` (native Percent field — API returns a decimal fraction already), `Team` (link), `Player` (link)
 `Contract Terms` → `Start Date`, `End Date`, `Contract Year Terms` (link)
 `Contract Year Terms` → `Start Date`, `End Date`, `Base Compensation` (this is a **monthly** figure, not annual — `Annual Compensation = Base Compensation × 12`)
+`Dues Accounting` → `Payroll Date`, `Player` (link — not every record has this populated), `Full Name` (text fallback match target when `Player` is empty), `Dues Paid`. Real payroll-remittance records, unrelated to the `Contracts`-derived calculation — this is "what was actually paid," not "what should be owed."
 
 ## Business rules (confirmed with the client — non-obvious, get these wrong and dues are wrong)
 
@@ -71,6 +73,7 @@ Staff login is gated by **Supabase Auth** (email/password, no self-signup — ac
 - **Termination Date** is exclusive — the termination date itself is not a paid day; the last accruing day is the day *before* it. An open-ended contract (no `Contract End Date`) with a `Termination Date` set is a real case, not an edge case — don't let an empty-string comparison silently discard it.
 - **Multiple contracts per player** (e.g. released and re-signed mid-season) are merged into **one row**, not shown as separate rows — summed dues, combined chronological period breakdown. A pay period can legitimately split across two different contracts (or two Contract Year Terms) if the transition falls mid-period; both contributions are shown as adjacent "(split)" line items, never silently collapsed into one.
 - Full containment of the query range is *not* required for a contract to appear — any date overlap is enough, and coverage is prorated accordingly. Excluding partially-overlapping contracts entirely was the original bug report that started this rewrite.
+- **Actual dues paid** (`Dues Accounting` table) is shown *alongside*, not merged into, the calculated/owed figures — the two numbers can legitimately diverge (e.g. a player owes dues by contract but `Dues Authorization` was never checked, so the calculated total is $0 while real payroll records show money was actually paid) and collapsing them into one number would hide that mismatch, which is the entire point of surfacing both.
 
 ## Testing
 

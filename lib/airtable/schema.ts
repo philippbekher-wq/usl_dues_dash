@@ -4,6 +4,7 @@ export const TABLES = {
   contracts: "Contracts",
   contractTerms: "Contract Terms",
   contractYearTerms: "Contract Year Terms",
+  duesAccounting: "Dues Accounting",
 } as const;
 
 export const FIELDS = {
@@ -34,5 +35,12 @@ export const FIELDS = {
     startDate: "Start Date",
     endDate: "End Date",
     baseCompensation: "Base Compensation",
+  },
+  duesAccounting: {
+    player: "Player",
+    fullName: "Full Name",
+    payrollDate: "Payroll Date",
+    duesPaid: "Dues Paid",
+    teamName: "Team Name",
   },
 } as const;

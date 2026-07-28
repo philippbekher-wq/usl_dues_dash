@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { TeamDuesReport } from "@/lib/dues/types";
+import type { TeamDuesReportWithActuals } from "@/lib/dues/types";
 import { DEFAULT_SEASON_END, DEFAULT_SEASON_START, monthDayToIsoForYear } from "@/lib/dues/season";
 import { DateRangePicker } from "./DateRangePicker";
 import { ResultsTable } from "./ResultsTable";
@@ -12,7 +12,7 @@ type RequestState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "success"; report: TeamDuesReport };
+  | { status: "success"; report: TeamDuesReportWithActuals };
 
 const currentYear = new Date().getFullYear();
 const DEFAULT_SEASON_START_DATE = monthDayToIsoForYear(currentYear, DEFAULT_SEASON_START);
@@ -47,7 +47,7 @@ export function DashboardClient({ teams }: { teams: TeamOption[] }) {
         return;
       }
 
-      setState({ status: "success", report: body as TeamDuesReport });
+      setState({ status: "success", report: body as TeamDuesReportWithActuals });
     } catch {
       setState({ status: "error", message: "Could not reach the server. Try again." });
     }
