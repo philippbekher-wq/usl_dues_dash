@@ -4,7 +4,60 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-function LoginForm() {
+const inputClass =
+  "rounded-md border border-(--color-line) bg-(--color-paper) px-3 py-2 text-sm";
+const labelClass = "text-xs font-medium uppercase tracking-wide text-(--color-ink-muted)";
+const cardClass =
+  "w-full max-w-sm rounded-lg border border-(--color-line) bg-(--color-paper-raised) p-6";
+const submitClass =
+  "mt-5 w-full rounded-md bg-(--color-pitch) px-4 py-2 text-sm font-medium text-(--color-paper) disabled:opacity-60";
+
+const RESET_PASSWORD_FORM_URL = "https://forms.fillout.com/t/9AMvexW7SYus";
+
+function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const url = new URL(RESET_PASSWORD_FORM_URL);
+    url.searchParams.set("email", email);
+    window.location.href = url.toString();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={cardClass}>
+      <p className="mb-4 text-sm text-(--color-ink-muted)">
+        Enter your email to request a password reset from the team.
+      </p>
+
+      <label className="flex flex-col gap-1.5">
+        <span className={labelClass}>Email</span>
+        <input
+          type="email"
+          required
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={inputClass}
+        />
+      </label>
+
+      <button type="submit" className={submitClass}>
+        Reset password
+      </button>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-4 text-xs font-medium text-(--color-ink-muted) hover:text-(--color-ink)"
+      >
+        ← Back to sign in
+      </button>
+    </form>
+  );
+}
+
+function SignInForm({ onForgotPassword }: { onForgotPassword: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -31,48 +84,55 @@ function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-sm rounded-lg border border-(--color-line) bg-(--color-paper-raised) p-6"
-    >
+    <form onSubmit={handleSubmit} className={cardClass}>
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-(--color-ink-muted)">
-          Email
-        </span>
+        <span className={labelClass}>Email</span>
         <input
           type="email"
           required
           autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-(--color-line) bg-(--color-paper) px-3 py-2 text-sm"
+          className={inputClass}
         />
       </label>
 
       <label className="mt-4 flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-(--color-ink-muted)">
-          Password
-        </span>
+        <span className={labelClass}>Password</span>
         <input
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-(--color-line) bg-(--color-paper) px-3 py-2 text-sm"
+          className={inputClass}
         />
       </label>
 
       {error ? <p className="mt-3 text-sm text-(--color-danger)">{error}</p> : null}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 w-full rounded-md bg-(--color-pitch) px-4 py-2 text-sm font-medium text-(--color-paper) disabled:opacity-60"
-      >
+      <button type="submit" disabled={loading} className={submitClass}>
         {loading ? "Signing in…" : "Sign in"}
+      </button>
+
+      <button
+        type="button"
+        onClick={onForgotPassword}
+        className="mt-4 text-xs font-medium text-(--color-ink-muted) hover:text-(--color-ink)"
+      >
+        Forgot password?
       </button>
     </form>
   );
+}
+
+function LoginForm() {
+  const [mode, setMode] = useState<"sign-in" | "forgot-password">("sign-in");
+
+  if (mode === "forgot-password") {
+    return <ForgotPasswordForm onBack={() => setMode("sign-in")} />;
+  }
+
+  return <SignInForm onForgotPassword={() => setMode("forgot-password")} />;
 }
 
 export default function LoginPage() {

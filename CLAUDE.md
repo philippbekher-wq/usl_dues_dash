@@ -51,7 +51,7 @@ Staff login is gated by **Supabase Auth** (email/password, no self-signup — ac
 
 - `middleware.ts` — runs on every route except static assets, calls `supabase.auth.getUser()`, and redirects to `/login` if there's no session (and redirects an already-logged-in user away from `/login`). This is what actually enforces the gate — it also covers `/api/*` routes, not just pages.
 - `lib/supabase/client.ts` / `server.ts` — browser and server Supabase client factories (`@supabase/ssr`), following the standard Next.js App Router session-refresh pattern.
-- `app/login/page.tsx` — client component, calls `supabase.auth.signInWithPassword` directly (no custom API route), then redirects to the `?next=` path or `/`.
+- `app/login/page.tsx` — client component, calls `supabase.auth.signInWithPassword` directly (no custom API route), then redirects to the `?next=` path or `/`. Has a "Forgot password?" toggle — this is **not** Supabase's built-in email-reset flow; it just redirects to an external Fillout form (`RESET_PASSWORD_FORM_URL`) with the entered email pre-filled as a query param, for the team to handle password resets manually rather than via an in-app flow.
 - `components/LogoutButton.tsx` — calls `supabase.auth.signOut()`, rendered in the dashboard header.
 - Only the Supabase **anon/public key** is used anywhere in this app (safe to expose client-side) — the `service_role` key is never needed and must never be added to this codebase.
 
