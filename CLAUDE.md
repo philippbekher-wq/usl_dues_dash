@@ -55,6 +55,14 @@ Staff login is gated by **Supabase Auth** (email/password, no self-signup — ac
 - `components/LogoutButton.tsx` — calls `supabase.auth.signOut()`, rendered in the dashboard header.
 - Only the Supabase **anon/public key** is used anywhere in this app (safe to expose client-side) — the `service_role` key is never needed and must never be added to this codebase.
 
+## Error monitoring (Sentry)
+
+`@sentry/nextjs` v11, org `flowlylabs`, project `usl-dues-dash`. Config lives in `instrumentation.ts` / `instrumentation-client.ts` / `sentry.{server,edge}.config.ts` (DSN is hardcoded there — it's public-safe), `app/global-error.tsx`, and `withSentryConfig` in `next.config.ts`.
+
+- **Tunnel route `/monitoring`** (browser events are proxied through the app to dodge ad blockers) is excluded from the `middleware.ts` matcher. Keep it excluded — otherwise the login gate redirects error reports to `/login` and they're silently dropped.
+- **`dataCollection` is deliberately locked down** in all three `Sentry.init` calls (no cookies, headers, HTTP bodies, user info, or stack-frame variables). The defaults would ship the Supabase session cookie, the Airtable token header, and real player compensation data from `/api/dues` / Airtable responses. Don't loosen it.
+- `SENTRY_AUTH_TOKEN` (source-map upload during `next build`) lives in gitignored `.env.sentry-build-plugin` locally and as a build-time `SECRET` in the DO app spec. Never print it.
+
 ## Airtable schema
 
 `Teams` → `Name`, `Pay Periods per Year`, `Payroll Cycle`

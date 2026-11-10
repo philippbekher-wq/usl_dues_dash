@@ -46,6 +46,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // `monitoring` is Sentry's tunnel route (next.config.ts `tunnelRoute`) — it must bypass the
+    // login gate, otherwise browser error reports get redirected to /login and silently dropped.
+    "/((?!_next/static|_next/image|favicon.ico|monitoring|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
